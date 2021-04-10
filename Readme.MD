@@ -1,2 +1,2 @@
 # Design Patters cheatsheet
-Source: https://sourcemaking.com/design_patterns
+- Source: https://sourcemaking.com/design_patterns
