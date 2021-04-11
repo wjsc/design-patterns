@@ -5,58 +5,45 @@
 // The structure of State and Bridge are identical (except that Bridge admits hierarchies of envelope classes, whereas State allows only one). The two patterns use the same structure to solve different problems: State allows an object's behavior to change along with its state, while Bridge's intent is to decouple an abstraction from its implementation so that the two can vary independently.
 // If interface classes delegate the creation of their implementation classes (instead of creating/coupling themselves directly), then the design usually uses the Abstract Factory pattern to create the implementation objects.
 
-class Node {
-    public int value;
-    public Node prev, next;
-
-    public Node(int i) {
-        value = i;
-    }
-}
-
+/**
+ * Create an interface/wrapper class that "has a"
+ * implementation object and delegates all requests to it
+ */
 class Stack {
-    private StackImpl impl;
-
-    public Stack( String s ) {
-        if (s.equals("array")) {
-            impl = new StackArray();
-        } else if (s.equals("list")) {
-            impl = new StackList();
-        } else {
-            System.out.println("Stack: unknown parameter");
+    protected StackImp imp;
+    public Stack(String s) {
+        if (s.equals("java")) {
+            imp = new StackJava();
+        }
+        else {
+            imp = new StackMine();
         }
     }
-
     public Stack() {
-        this("array");
+        this("java");
     }
 
     public void push(int in) {
-        impl.push( in );
+        imp.push(in);
     }
 
     public int pop() {
-        return impl.pop();
-    }
-
-    public int top() {
-        return impl.top();
+        return (Integer) imp.pop();
     }
 
     public boolean isEmpty() {
-        return impl.isEmpty();
-    }
-
-    public boolean isFull() {
-        return impl.isFull();
+        return imp.empty();
     }
 }
 
+/**
+ * Embellish the interface class with derived classes if desired
+ */
 class StackHanoi extends Stack {
     private int totalRejected = 0;
 
     public StackHanoi() {
-        super("array");
+        super("java");
     }
 
     public StackHanoi(String s) {
@@ -68,141 +55,63 @@ class StackHanoi extends Stack {
     }
 
     public void push(int in) {
-        if (!isEmpty() && in > top()) {
+        if (!imp.empty() && in > (Integer)imp.peek()) {
             totalRejected++;
-        }
-        else {
-            super.push(in);
+        } else {
+            imp.push(in);
         }
     }
 }
 
-class StackFIFO extends Stack {
-    private StackImpl stackImpl = new StackList();
-
-    public StackFIFO() {
-        super("array");
-    }
-
-    public StackFIFO(String s) {
-        super(s);
-    }
-
-    public int pop() {
-        while (!isEmpty()) {
-            stackImpl.push(super.pop());
-        }
-        int ret = stackImpl.pop();
-        while (!stackImpl.isEmpty()) {
-            push(stackImpl.pop());
-        }
-        return ret;
-    }
+/**
+ * Create an implementation/body base class
+ */
+interface StackImp {
+    Object push(Object o);
+    Object peek();
+    boolean empty();
+    Object pop();
 }
 
-interface StackImpl {
-    void push(int i);
-    int pop();
-    int top();
-    boolean isEmpty();
-    boolean isFull();
-}
+class StackJava extends java.util.Stack implements StackImp { }
 
-class StackArray implements StackImpl {
-    private int[] items;
+/**
+ * Derive the separate implementations from the common abstraction
+ */
+class StackMine implements StackImp {
+    private Object[] items = new Object[20];
     private int total = -1;
 
-    public StackArray() {
-        this.items = new int[12];
+    public Object push(Object o) {
+        return items[++total] = o;
     }
 
-    public StackArray(int cells) {
-        this.items = new int[cells];
-    }
-
-    public void push(int i) {
-        if (!isFull()) {
-            items[++total] = i;
-        }
-    }
-
-    public boolean isEmpty() {
-        return total == -1;
-    }
-
-    public boolean isFull() {
-        return total == items.length - 1;
-    }
-
-    public int top() {
-        if (isEmpty()) {
-            return -1;
-        }
+    public Object peek() {
         return items[total];
     }
 
-    public int pop() {
-        if (isEmpty()) {
-            return -1;
-        }
+    public Object pop() {
         return items[total--];
     }
-}
 
-class StackList implements StackImpl {
-    private Node last;
-
-    public void push(int i) {
-        if (last == null) {
-            last = new Node(i);
-        } else {
-            last.next = new Node(i);
-            last.next.prev = last;
-            last = last.next;
-        }
-    }
-
-    public boolean isEmpty() {
-        return last == null;
-    }
-
-    public boolean isFull() {
-        return false;
-    }
-
-    public int top() {
-        if (isEmpty()) {
-            return -1;
-        }
-        return last.value;
-    }
-
-    public int pop() {
-        if (isEmpty()) {
-            return -1;
-        }
-        int ret = last.value;
-        last = last.prev;
-        return ret;
+    public boolean empty() {
+        return total == -1;
     }
 }
 
-public class BridgeDisk {
+public class BridgeDemo {
     public static void main(String[] args) {
-        Stack[] stacks = {new Stack("array"), new Stack("list"),
-                new StackFIFO(), new StackHanoi()};
-        for (int i=1, num; i < 15; i++) {
-            for (int j=0; j < 3; j++) {
-                stacks[j].push( i );
+        Stack[] stacks = { new Stack("java"), new Stack("mine"),
+                new StackHanoi("java"), new StackHanoi("mine") };
+        for (int i=0, num; i < 20; i++) {
+            num = (int)(Math.random() * 1000) % 40;
+            for (Stack stack : stacks) {
+                stack.push(num);
             }
-        }
-        Random rn = new Random();
-        for (int i=1, num; i < 15; i++) {
-            stacks[3].push(rn.nextInt(20));
         }
         for (int i=0, num; i < stacks.length; i++) {
             while (!stacks[i].isEmpty()) {
-                System.out.print(stacks[i].pop() + "  ");
+                System.out.print( stacks[i].pop() + "  ");
             }
             System.out.println();
         }
